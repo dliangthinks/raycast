@@ -8,13 +8,17 @@ export type ProviderType = "gemini" | "openai" | "deepseek";
 
 class LLMManager {
   private static instance: LLMManager;
-  private providers: Map<ProviderType, LLMProvider>;
+  private providers: Map<ProviderType, LLMProvider | null>;
   private modelCache: Map<ProviderType, Promise<string[]>>;
 
   private constructor() {
     this.providers = new Map();
     this.modelCache = new Map();
-    this.initializeProviders();
+    
+    // Initialize map with null values - providers will be created on demand
+    this.providers.set("gemini", null);
+    this.providers.set("openai", null);
+    this.providers.set("deepseek", null);
   }
 
   public static getInstance(): LLMManager {
@@ -24,21 +28,48 @@ class LLMManager {
     return LLMManager.instance;
   }
 
-  private initializeProviders() {
+  private initializeProvider(type: ProviderType): LLMProvider {
     const prefs = getPreferenceValues();
     
-    // Initialize providers with their respective API keys
-    this.providers.set("gemini", new GeminiProvider(prefs.geminiApiKey));
-    this.providers.set("openai", new OpenAIProvider(prefs.openaiApiKey));
-    this.providers.set("deepseek", new DeepSeekProvider(prefs.deepseekApiKey));
+    let provider: LLMProvider;
+    switch (type) {
+      case "gemini":
+        provider = new GeminiProvider(prefs.geminiApiKey);
+        break;
+      case "openai":
+        provider = new OpenAIProvider(prefs.openaiApiKey);
+        break;
+      case "deepseek":
+        provider = new DeepSeekProvider(prefs.deepseekApiKey);
+        break;
+      default:
+        throw new Error(`Unknown provider type: ${type}`);
+    }
+    
+    this.providers.set(type, provider);
+    return provider;
   }
 
   public getProvider(type: ProviderType): LLMProvider {
-    const provider = this.providers.get(type);
+    let provider = this.providers.get(type);
     if (!provider) {
-      throw new Error(`Provider ${type} not found`);
+      provider = this.initializeProvider(type);
     }
     return provider;
+  }
+
+  public getDefaultModel(type: ProviderType): string {
+    const prefs = getPreferenceValues();
+    switch (type) {
+      case "gemini":
+        return prefs.geminiModel || "gemini-2.0-flash";
+      case "openai":
+        return prefs.openaiModel || "gpt-4-0125-preview";
+      case "deepseek":
+        return prefs.deepseekModel || "deepseek-chat-v3";
+      default:
+        throw new Error(`Unknown provider type: ${type}`);
+    }
   }
 
   public async getModels(type: ProviderType): Promise<string[]> {
@@ -53,8 +84,9 @@ class LLMManager {
       return cached;
     }
 
-    // Fetch and cache models
-    const modelPromise = this.getProvider(type).getModels()
+    // Initialize provider if needed and fetch models
+    const provider = this.getProvider(type);
+    const modelPromise = provider.getModels()
       .then(async (models) => {
         await setCachedModels(type, models);
         return models;

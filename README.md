@@ -106,20 +106,4 @@ If you hit rate limits:
 # Install dependencies
 npm install
 
-# Start development
-ray develop
 
-# Build
-ray build
-
-# Lint
-ray lint
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - see LICENSE file for details

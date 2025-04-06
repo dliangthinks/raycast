@@ -23,6 +23,12 @@ export interface LLMError extends Error {
   provider: string;
   code?: string;
   isRateLimit?: boolean;
+  errorType?: 'authentication' | 'rate_limit' | 'invalid_request' | 'content_policy' | 'server_error' | 'network_error' | 'unknown';
+  details?: {
+    status?: number;
+    requestId?: string;
+    original?: any;
+  };
 }
 
 // Cache interface for storing model lists

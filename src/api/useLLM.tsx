@@ -39,6 +39,11 @@ export default function useLLM(props: any, options: UseLLMOptions = {}) {
     setLastQuery(query);
     setPage(Pages.Detail);
 
+    console.log(`[LLM Debug] Request to ${provider}:`, {
+      model: prefs[`${provider}Model`] || llmManager.getDefaultModel(provider),
+      input: query
+    });
+
     await showToast({
       style: Toast.Style.Animated,
       title: `Waiting for ${provider}...`,
@@ -47,19 +52,33 @@ export default function useLLM(props: any, options: UseLLMOptions = {}) {
     const start = Date.now();
     try {
       const llmProvider = llmManager.getProvider(provider);
+      let streamContent = "";
       const response = await llmProvider.ask(query, {
-        model: prefs.model,
+        model: prefs[`${provider}Model`] || llmManager.getDefaultModel(provider),
         stream: (x) => {
+          streamContent += x;
           setMarkdown((markdown) => markdown + x);
         },
         data: data ?? buffer,
       });
 
-      setMarkdown(response);
-      setLastResponse(response);
+      const finalContent = response || streamContent;
+      console.log(`[LLM Debug] Response from ${provider}:`, {
+        timeMs: Date.now() - start,
+        outputLength: finalContent.length,
+        output: finalContent.slice(0, 100) + (finalContent.length > 100 ? '...' : '') // Show first 100 chars
+      });
+      
+      if (!finalContent) {
+        console.error(`[LLM Debug] No content received from provider ${provider}`);
+        throw new Error("No content received from provider");
+      }
+
+      setMarkdown(finalContent);
+      setLastResponse(finalContent);
 
       // Add to history with model information
-      await addToHistory(query, response, prefs.model);
+      await addToHistory(query, finalContent, prefs[`${provider}Model`]);
 
       await showToast({
         style: Toast.Style.Success,
@@ -68,6 +87,16 @@ export default function useLLM(props: any, options: UseLLMOptions = {}) {
       });
     } catch (e) {
       const error = e as LLMError;
+      console.error("[LLM Debug] Error details:", {
+        provider,
+        error: error.message,
+        stack: error.stack,
+        isRateLimit: error.isRateLimit,
+        errorType: error.errorType,
+        details: error.details
+      });
+      
+      // Handle rate limit errors
       if (error.isRateLimit) {
         await showToast({
           style: Toast.Style.Failure,
@@ -75,14 +104,49 @@ export default function useLLM(props: any, options: UseLLMOptions = {}) {
           message: "Please slow down.",
         });
         setMarkdown(`## Could not access ${provider}.\n\nYou have been rate limited. Please slow down and try again later.`);
-      } else {
+      } 
+      // Handle empty response
+      else if (!error.message || error.message === "No content received from provider") {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Empty Response",
+          message: `${provider} returned no content`,
+        });
+        setMarkdown(
+          `## Empty Response from ${provider}\n\nThe provider did not return any content. This could be due to:\n\n1. The model not generating a response\n2. A streaming error\n3. An issue with the model's configuration\n\nTry:\n1. Using a different model\n2. Simplifying your prompt\n3. Checking the provider's status page\n\n**Provider:** ${provider}\n**Model:** ${prefs[`${provider}Model`] || llmManager.getDefaultModel(provider)}`
+        );
+      }
+      // Handle API key issues
+      else if (error.message.includes("key") || error.message.includes("auth") || error.message.includes("token")) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "API Key Error",
+          message: "Check your API key in preferences",
+        });
+        setMarkdown(
+          `## API Key Error for ${provider}.\n\nThere seems to be an issue with your API key. Please verify that:\n\n1. You have entered a valid API key in Raycast preferences\n2. The API key has sufficient permissions\n3. The API key is active and not expired\n\n**Error details:** ${error.message}`
+        );
+      }
+      // Handle content policy violations
+      else if (error.message.includes("content") || error.message.includes("policy") || error.message.includes("safety") || error.message.includes("moderation")) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Content Policy Violation",
+          message: "Your prompt was flagged by provider",
+        });
+        setMarkdown(
+          `## Content Policy Violation - ${provider}\n\nYour prompt was flagged by ${provider}'s content filters. Please modify your prompt to comply with their content policies.\n\n**Error details:** ${error.message}`
+        );
+      }
+      // Generic fallback error
+      else {
         await showToast({
           style: Toast.Style.Failure,
           title: "Response Failed",
           message: `${(Date.now() - start) / 1000} seconds`,
         });
         setMarkdown(
-          `## Could not access ${provider}.\n\nThis may be because the provider has decided that your prompt did not comply with its regulations. Please try another prompt, and if it still does not work, create an issue on GitHub.`
+          `## Could not access ${provider}.\n\nAn error occurred when communicating with the ${provider} API. This could be due to:\n\n1. Network connectivity issues\n2. The provider may be experiencing downtime\n3. Your prompt may have been rejected by the provider's content filters\n4. The model you selected may not be available\n\n**Error details:** ${error.message}`
         );
       }
     }
