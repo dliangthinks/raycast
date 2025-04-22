@@ -1,10 +1,10 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "raycast-gemini",
-  "title": "Multi-LLM Polish",
-  "description": "Polish your text using various LLM providers.",
-  "icon": "gemini-icon.png",
-  "author": "EvanZhouDev",
+  "name": "byol",
+  "title": "BYOL",
+  "description": "Bring your own LLM.",
+  "icon": "byol.svg",
+  "author": "dliangthinks",
   "categories": [
     "Productivity",
     "Developer Tools"
@@ -16,7 +16,7 @@
       "title": "Polish Text",
       "description": "Polish your text using your preferred LLM",
       "mode": "view",
-      "icon": "gemini-icon.png",
+      "icon": "byol.svg",
       "preferences": [
         {
           "name": "provider",
@@ -117,7 +117,7 @@
           "description": "The prompt to use for polishing text",
           "type": "textfield",
           "required": false,
-          "default": "Please polish and improve the following text while maintaining its original meaning. Make it more professional and clear."
+          "default": "Please polish and improve the following text while maintaining its original meaning. Make it more professional and clear. Generate polished text and nothing else."
         }
       ]
     }

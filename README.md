@@ -1,10 +1,11 @@
-# Multi-LLM Polish for Raycast
+# Bring Your Own LLM to Raycast
 
-A powerful text polishing extension for Raycast that leverages multiple LLM providers to help you improve your writing.
+AI extension for Raycast that leverages multiple LLM providers to help you improve your writing.
+An example command - Polish - is provided. You can add as many commands as you need.
 
 ## Features
 
-- 🔄 Multiple LLM Support
+- 🔄 Multiple LLM Support, currently listing:
   - Google Gemini
   - OpenAI GPT
   - DeepSeek
@@ -13,13 +14,20 @@ A powerful text polishing extension for Raycast that leverages multiple LLM prov
 - 🔒 Secure API key management
 - ⚡️ Fast and efficient text processing
 
-## Installation
-
-1. Install the extension from Raycast Store
-2. Configure your preferred LLM provider(s)
-3. Start polishing your text!
 
 ## Setup
+
+This extension is currently not submitted to raycast store. In order to use it, you have to compile locally. But once compiled and loaded into raycast it will stay there.
+
+
+```bash
+# Install dependencies
+npm install
+
+npm run dev
+
+npm run build
+```
 
 ### API Keys
 
@@ -58,6 +66,7 @@ The extension can be configured through Raycast preferences:
 
 ### Provider Selection
 
+Add new providers in package.json.
 You can switch between providers:
 - Through global preferences
 - Per command through command preferences
@@ -65,45 +74,9 @@ You can switch between providers:
 ### Model Selection
 
 Each provider supports different models:
-- Leave the model field empty to use provider's default
-- Enter a specific model name for custom selection
-- Models are fetched automatically when available
+- For Gemini, currently listing 2.0 flash and 2.5 pro
+- For OpenAI, currently listing 4o-mini and 4o
+- For Deepseek, currently listing v3 chat
+- 
 
-## Troubleshooting
-
-### Common Issues
-
-1. **API Key Issues**
-   - Ensure your API key is correctly entered
-   - Check if the API key has sufficient permissions
-   - Verify the API key is active
-
-2. **Provider Not Responding**
-   - Check your internet connection
-   - Verify the provider's service status
-   - Try switching to a different provider
-
-3. **Model Not Available**
-   - Clear the model field to use default
-   - Check if the model name is correct
-   - Try a different model
-
-### Rate Limits
-
-Each provider has different rate limits:
-- Gemini: Varies by API key type
-- OpenAI: Depends on your subscription
-- DeepSeek: Check their documentation
-
-If you hit rate limits:
-- Wait a few minutes before retrying
-- Switch to a different provider
-- Consider upgrading your API quota
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-
+This project was adapted from Evanzhou's Google Gemini Extension.
